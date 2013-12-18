@@ -86,7 +86,6 @@ public class Util extends FGUtilCore implements Listener {
                 String name = result.getItemMeta().hasDisplayName() ? result.getItemMeta().getDisplayName() : "";
                 if (!name.isEmpty()) fwm.setDisplayName(name);
                 result.setItemMeta(fwm);
-                result = item.clone();
                 result.setAmount(1);
             }
             if (item.getType() == Material.SULPHUR) addPower++;
