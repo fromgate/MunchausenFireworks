@@ -33,7 +33,7 @@ public class Util extends FGUtilCore implements Listener {
     public Util(Munchausen plg, boolean savelng, String lng) {
         super(plg, savelng, lng, "munchausen", "munchausen");
         this.plg = plg;
-        this.initUpdateChecker("Munchausen Fireworks", "70681", "a2a7b26dd4dc9bc496c80de4b49e87cb42e34ae3", "munchausen", plg.version_check);
+        this.initUpdateChecker("Munchausen Fireworks", "70681", "munchausen", plg.version_check);
         if (plg.useCraft) addRecipes();
     }
 

@@ -64,10 +64,6 @@ public abstract class FGUtilCore {
     //конфигурация утилит
     private String px = "";
     private String permprefix="fgutilcore.";
-
-
-
-
     private String language="english";
     private String plgcmd = "<command>";
     // Сообщения+перевод
@@ -90,7 +86,6 @@ public abstract class FGUtilCore {
     //newupdate-checker
     private boolean project_check_version = true;
     private String project_id = ""; //66204 - PlayEffect
-    private String project_apikey = "";
     private String project_name = "";
     private String project_current_version = "";
     private String project_last_version = "";
@@ -114,13 +109,12 @@ public abstract class FGUtilCore {
     }
 
 
-    public void initUpdateChecker(String plugin_name, String project_id, String apikey, String bukkit_dev_name, boolean enable){
+    public void initUpdateChecker(String plugin_name, String project_id, String bukkit_dev_name, boolean enable){
         this.project_id = project_id;
-        this.project_apikey = apikey;
         this.project_curse_url = "https://api.curseforge.com/servermods/files?projectIds="+this.project_id;
         this.project_name =plugin_name;
         this.project_current_version = des.getVersion();
-        this.project_check_version =enable&&(!this.project_id.isEmpty()&&(!this.project_apikey.isEmpty()));
+        this.project_check_version =enable&&(!this.project_id.isEmpty());
         this.project_bukkitdev = "http://dev.bukkit.org/bukkit-plugins/"+bukkit_dev_name+"/";
 
         if (this.project_check_version){
@@ -172,7 +166,7 @@ public abstract class FGUtilCore {
 
         try {
             URLConnection conn = url.openConnection();
-            conn.addRequestProperty("X-API-Key", this.project_apikey);
+            conn.addRequestProperty("X-API-Key", null);
             conn.addRequestProperty("User-Agent", this.project_name+" using FGUtilCore (by fromgate)");
             BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
             String response = reader.readLine();
@@ -194,7 +188,6 @@ public abstract class FGUtilCore {
     private boolean isUpdateRequired(){
         if (!project_check_version) return false;
         if (project_id.isEmpty()) return false;
-        if (project_apikey.isEmpty()) return false;
         if (project_last_version.isEmpty()) return false;
         if (project_current_version.isEmpty()) return false;
         if (project_current_version.equalsIgnoreCase(project_last_version)) return false;
@@ -815,7 +808,6 @@ public abstract class FGUtilCore {
         if ((!(p instanceof Player))&&(!colorconsole)) message = ChatColor.stripColor(message);
         if (message.length()>=2){
             String lastTwoChars = message.substring(message.length()-2);
-            BC (lastTwoChars);
             if (!message.equals(ChatColor.stripColor(lastTwoChars))) message = message.substring(0, message.length()-2);
         }
         p.sendMessage(message);
