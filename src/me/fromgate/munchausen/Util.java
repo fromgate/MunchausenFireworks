@@ -22,6 +22,7 @@ import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.ShapelessRecipe;
@@ -33,7 +34,7 @@ public class Util extends FGUtilCore implements Listener {
     public Util(Munchausen plg, boolean savelng, String lng) {
         super(plg, savelng, lng, "munchausen", "munchausen");
         this.plg = plg;
-        this.initUpdateChecker("Munchausen Fireworks", "70681", "munchausen", plg.version_check);
+        this.initUpdateChecker("Munchausen Fireworks", "70681", "munchausen", plg.versionCheck);
         if (plg.useCraft) addRecipes();
     }
 
@@ -49,6 +50,12 @@ public class Util extends FGUtilCore implements Listener {
         rocket.addIngredient(Material.FIREWORK);
         rocket.addIngredient(Material.LEASH);
         Bukkit.addRecipe(rocket);
+        
+        ShapelessRecipe carrier = new ShapelessRecipe (ItemUtil.parseItemStack(plg.carrierItem));
+        carrier.addIngredient(Material.FIREWORK);
+        carrier.addIngredient(Material.LEASH);
+        carrier.addIngredient(Material.FURNACE);
+        Bukkit.addRecipe(carrier);
     }
     
     
@@ -60,6 +67,19 @@ public class Util extends FGUtilCore implements Listener {
         }
         return false;
     }
+    
+    @EventHandler(priority=EventPriority.NORMAL, ignoreCancelled = true)
+    public void checkIsPlayerMovingInWall (PlayerMoveEvent event){
+    	if (!event.getPlayer().isInsideVehicle()) return;
+    	if (event.getPlayer().getVehicle().getType()!=EntityType.FIREWORK) return;
+    	if (event.getTo().getBlock().getType() != Material.AIR
+    			||event.getTo().getBlock().getRelative(0,1,0).getType() != Material.AIR
+    			||event.getTo().getBlock().getRelative(0,2,0).getType() != Material.AIR){
+            kickPlayer (event.getPlayer(),1.5);
+            detonateAfterJump ((Firework) event.getPlayer().getVehicle(),true);
+    	}
+    }
+    
 
     /*
      * To prevent item dupe. I cannot find other way to prevent dupe...
@@ -101,7 +121,6 @@ public class Util extends FGUtilCore implements Listener {
         for (HumanEntity he : event.getViewers()){
             if (!((Player) he).hasPermission("munchausen.fireworks.craft")) result = null;
         }
-        
         event.getInventory().setResult(result);
     }
 
@@ -126,64 +145,98 @@ public class Util extends FGUtilCore implements Listener {
             if (p.getItemInHand().getAmount()>1) p.getItemInHand().setAmount(p.getItemInHand().getAmount()-1);
             else p.setItemInHand(null);
         }
-        fireworkAtLocation ((LivingEntity) event.getRightClicked(), event.getRightClicked().getLocation(), p.getItemInHand());
+        fireworkAtLocation ((LivingEntity) event.getRightClicked(), event.getRightClicked().getLocation(), p.getItemInHand(),false);
     }
 
 
     @EventHandler(priority=EventPriority.NORMAL, ignoreCancelled = true)
     public void onSetFirework(PlayerInteractEvent event){
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        
         Player p = event.getPlayer();
-        if (!compareItemStr(p.getItemInHand(), plg.rocketItem)) return;
-        if (!p.hasPermission("munchausen.firework")) return;
-        if (plg.requireSprint&&(!p.isSprinting())) {
-            normalizeFireworkPower (p.getItemInHand());
-            return;
+        if (compareItemStr(p.getItemInHand(), plg.rocketItem)) {
+            if (!p.hasPermission("munchausen.firework")) return;
+            if (plg.requireSprint&&(!p.isSprinting())) {
+                normalizeFireworkPower (p.getItemInHand());
+                return;
+            }
+            if (p.getItemInHand() == null) return;
+            event.setCancelled(true);
+            if (plg.removeRocketItem&&(p.getGameMode() != GameMode.CREATIVE)){
+                if (p.getItemInHand().getAmount()>1) p.getItemInHand().setAmount(p.getItemInHand().getAmount()-1);
+                else p.setItemInHand(null);
+            }
+            fireworkAtLocation (p, event.getClickedBlock().getRelative(BlockFace.UP).getLocation(), p.getItemInHand(),false);            
+        } else if (compareItemStr(p.getItemInHand(), plg.carrierItem)){
+        	event.setCancelled(true);
+            if (!p.hasPermission("munchausen.carrier")) return;
+            if (plg.requireSprint&&(!p.isSprinting())) {
+                event.setCancelled(true);
+                return;
+            }
+            if(!burnFuel(p)) return;    
+            fireworkAtLocation (p, event.getClickedBlock().getRelative(BlockFace.UP).getLocation(), p.getItemInHand(),true);
         }
-        if (p.getItemInHand() == null) return;
-        event.setCancelled(true);
-        if (plg.removeRocketItem&&(p.getGameMode() != GameMode.CREATIVE)){
-            if (p.getItemInHand().getAmount()>1) p.getItemInHand().setAmount(p.getItemInHand().getAmount()-1);
-            else p.setItemInHand(null);
-        }
-        fireworkAtLocation (p, event.getClickedBlock().getRelative(BlockFace.UP).getLocation(), p.getItemInHand());
     }
 
-    public void kickPlayer(final LivingEntity p, final double mult){
-        p.setVelocity(p.getEyeLocation().getDirection().multiply(mult));
+    public void kickPlayer(final LivingEntity entity, final double mult){
+        entity.setVelocity(entity.getEyeLocation().getDirection().multiply(mult));
     }
 
+    private boolean burnFuel(Player player){
+    	if (!plg.useFuel) return true;
+    	if (player.getGameMode() == GameMode.CREATIVE) return true;
+    	if (!ItemUtil.hasItemInInventory(player, plg.carrierFuel)) return false;
+    	ItemUtil.removeItemInInventory(player, plg.carrierFuel);
+    	return true;
+    }
+    
+    private void burnCarrierFuel(Firework carrier, LivingEntity entity){
+        if (entity.getType() != EntityType.PLAYER) return;
+        Player player = (Player) entity;
+        if (NMSLib.isDisabled()) return;
+        if (!NMSLib.isTimeToUpdateFireworkPower(carrier)) return;
+        if(!burnFuel(player)) return;
+        NMSLib.resetFireworkPower(carrier); 
+        if (plg.carrierExplodeOnReload) player.getWorld().createExplosion(player.getLocation(), 0.01f);
+    }
 
-    public void changeFireworkDirection(final Firework f, final LivingEntity p){
-        if (f.isDead()||(f.getPassenger() == null)){
-            kickPlayer (p,1.5);
-            detonateAfterJump (f);
+    public void changeFireworkDirection(final Firework firework, final LivingEntity entity, final boolean carrier){
+        if (carrier) burnCarrierFuel(firework,entity); 
+        
+        if (firework.isDead()||(firework.getPassenger() == null)){
+            kickPlayer (entity,1.5);
+            detonateAfterJump (firework,carrier);
             return;
         }
+        
+        
         Bukkit.getScheduler().runTaskLater(plg, new Runnable(){
             @Override
             public void run() {
-                Vector dir = p.getEyeLocation().getDirection().multiply(0.1).setY(0);
-                f.setVelocity(f.getVelocity().normalize().add(dir).multiply(new Vector(1,plg.takeOffSpeed ? 0.8:1,1)));
-                f.setTicksLived(1);
-                changeFireworkDirection (f,p);
+                Vector dir = entity.getEyeLocation().getDirection().multiply(0.1).setY(0);
+                float takeOffModifier = (carrier ? plg.carrierTakeOffModifier: plg.rocketTakeOffModifier);
+                firework.setVelocity(firework.getVelocity().normalize().add(dir).multiply(new Vector(1,plg.takeOffSpeed ? takeOffModifier:1,1)));
+                firework.setTicksLived(1);
+                changeFireworkDirection (firework,entity,carrier);
             }
         }, 1);
     }
 
-    public void fireworkAtLocation (LivingEntity p, Location loc, ItemStack source){
+    public void fireworkAtLocation (LivingEntity p, Location loc, ItemStack source, boolean carrier){
         Firework f = (Firework) loc.getWorld().spawnEntity(loc, EntityType.FIREWORK);
         FireworkMeta fm = null;
         if (!plg.randomFirework&&(source.getType() == Material.FIREWORK)){
             fm = (FireworkMeta) source.getItemMeta();
-        } else {
+        } else if (!carrier){
             fm = (FireworkMeta) f.getFireworkMeta();
             fm.addEffect(FireworkEffect.builder().with(getRandomFireworkType()).withColor(Color.fromRGB(random.nextInt(255), random.nextInt(255), random.nextInt(255))).flicker(true).build());
             if (fm.getPower()<=1) fm.setPower(5); 
         }
         f.setFireworkMeta(fm);
+        if (carrier) NMSLib.setFireworkMaxPower(f, plg.carrierBaseTime);
         f.setPassenger(p);
-        changeFireworkDirection (f,p);
+        changeFireworkDirection (f,p,carrier);
     }
 
     public FireworkEffect.Type getRandomFireworkType(){
@@ -191,7 +244,7 @@ public class Util extends FGUtilCore implements Listener {
     }
 
 
-    public void detonateAfterJump(final Firework f){
+    public void detonateAfterJump(final Firework f, boolean carrier){
         Bukkit.getScheduler().runTaskLater(plg, new Runnable(){
             @Override
             public void run() {
@@ -199,7 +252,7 @@ public class Util extends FGUtilCore implements Listener {
                     f.detonate();
                 }
             }
-        }, (1+random.nextInt(3))*4);
+        }, (1+(carrier ? 0 : random.nextInt(3))*4));
     }
     
     private void normalizeFireworkPower(ItemStack item){
