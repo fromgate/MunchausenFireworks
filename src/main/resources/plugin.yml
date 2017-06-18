@@ -1,0 +1,11 @@
+name: MunchausenFireworks
+main: me.fromgate.munchausen.Munchausen
+version: 0.4.0
+website: http://fromgate.me
+author: fromgate, fromgate@gmail.com
+commands:
+   munchausen:
+      aliases: [mfirework,munch]
+      description: Munchausen Fireworks command
+      usage: |
+           /munchausen help
