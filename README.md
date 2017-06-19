@@ -55,8 +55,9 @@ Command `/munchausen give` will open this inventory
 
 
 ## Permissions
-* `munchausen.give` — allows to use give and help commands
-* `munchausen.config` — allows to use reload command
+* `munchausen.help` — allows to use `/munchausen help` command
+* `munchausen.give` — allows to use `/munchausen give` command
+* `munchausen.config` — allows to use `/munchausen reload` command
 * `munchausen.firework` — allows to use Munchausen Fireworks
 * `munchausen.carrier` — allows to use Carrier Fireworks
 * `munchausen.firework.launchmob` — allows to launch mobs with Munchausen Fireworks
