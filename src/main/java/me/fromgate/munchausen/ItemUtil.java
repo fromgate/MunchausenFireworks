@@ -1,9 +1,7 @@
 
 package me.fromgate.munchausen;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import me.fromgate.munchausen.message.M;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Color;
@@ -15,6 +13,10 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
 public class ItemUtil {
     private static JavaPlugin plugin;
@@ -61,7 +63,7 @@ public class ItemUtil {
                 else {
                     Material m = Material.getMaterial(ti[0].toUpperCase());
                     if (m== null) {
-                    	Munchausen.getUtil().logOnce("wrongitem"+ti[0], "Could not parse item material name (id) "+ti[0]);
+                    	M.logOnce("wrongitem"+ti[0], "Could not parse item material name (id) "+ti[0]);
                         return null;
                     }
                     id=m.getId();

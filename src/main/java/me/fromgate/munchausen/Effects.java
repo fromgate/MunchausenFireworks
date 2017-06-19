@@ -1,11 +1,12 @@
 package me.fromgate.munchausen;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import me.fromgate.munchausen.util.Param;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class Effects {
 	
@@ -23,12 +24,13 @@ public class Effects {
 		List<PotionEffect> effects = new ArrayList<PotionEffect>();
 		for (String effectStr : effectList){
 			if (effectStr.isEmpty()) continue;
-			Map<String,String> params = ParamUtil.parseParams(effectStr, "effect");
-			String typeStr = ParamUtil.getParam(params, "effect", "");
+			Param param = new Param(effectStr, "effect");
+			String typeStr = param.getParam("effect", "");
+
 			PotionEffectType potionType = parsePotionEffect (typeStr);
 			if (potionType==null) continue;
-			int level = Math.max(ParamUtil.getParam(params, "level", 1)-1, 0);
-			int duration = Munchausen.getUtil().safeLongToInt(Munchausen.getUtil().timeToTicks(Munchausen.getUtil().parseTime(ParamUtil.getParam(params, "time", "1s"))));
+			int level = Math.max(param.getParam("level", 1)-1, 0);
+			int duration = Util.safeLongToInt(Util.timeToTicks(Util.parseTime(param.getParam("time", "1s"))));
 			PotionEffect effect = new PotionEffect (potionType, duration, level,false);
 			effects.add(effect);
 		}
@@ -40,7 +42,7 @@ public class Effects {
 		PotionEffectType pef = null;
 		try{
 			pef = PotionEffectType.getByName(name);
-		} catch(Exception e){
+		} catch(Exception ignore){
 		}
 		return pef;
 	}

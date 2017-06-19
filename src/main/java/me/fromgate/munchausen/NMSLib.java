@@ -1,15 +1,15 @@
 package me.fromgate.munchausen;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
+import me.fromgate.munchausen.message.M;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Firework;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+
 public class NMSLib {
-	private static Munchausen plg(){
-		return Munchausen.instance;
-	}
-	private static String [] tested_versions = {"v1_6_R2","v1_6_R3","v1_7_R1","v1_7_R2","v1_7_R3","v1_8_R1","v1_8_R2"};
+
+	private static String [] tested_versions = {"v1_9_R2", "v1_10_R1","v1_11_R1","v1_12_R1"};
 	private static boolean disabled = true;
 	private static boolean activated = false;
 	private static String obcPrefix = "org.bukkit.craftbukkit.";
@@ -50,7 +50,7 @@ public class NMSLib {
 	}
 
 	private static void log(String string) {
-		plg().u.log(string);
+		M.logMessage(string);
 	}
 
 	public static boolean isTestedVersion(){
@@ -95,7 +95,7 @@ public class NMSLib {
 			int expected = (Integer) expectedLifespan.get(nms_firework);
 			int ticks = (Integer) ticksFlown.get(nms_firework);
 			return ((expected-ticks)<=2);
-		}catch(Exception e){
+		} catch(Exception e){
 			disabled = true;
 		}
 		return false;
